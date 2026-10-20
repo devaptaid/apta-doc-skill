@@ -1,0 +1,4 @@
+interface:
+  display_name: "Aptaworks PowerPoint"
+  short_description: "Build Aptaworks slides through Markdown and HTML"
+  default_prompt: "Use $apta-pptx to create an Aptaworks presentation, offering direct final output or Markdown and HTML review first."

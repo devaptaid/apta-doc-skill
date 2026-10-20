@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aptaworks Editorial Grid Deck System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Lato:wght@400;700;900&family=Newsreader:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #17234E;
+    --navy-deep: #0B1533;
+    --orange: #EF7636;
+    --cobalt: #2448FF;
+    --blue: #0A6F93;
+    --paper: #F6F3EA;
+    --surface: #FFFFFF;
+    --rule: #C9D2DF;
+    --grid: rgba(23, 35, 78, 0.09);
+    --ink: #17234E;
+    --muted: #5E6B82;
+    --white: #FFFFFF;
+    --ok: #2C8D63;
+    --warn: #EF7636;
+    --danger: #D94B35;
+    --sans: 'Lato', Arial, system-ui, sans-serif;
+    --display: 'Newsreader', Georgia, serif;
+    --mono: 'DM Mono', ui-monospace, monospace;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .deck { position: relative; width: 100vw; }
+  .slide {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    min-height: 720px;
+    overflow: hidden;
+    padding: 64px 84px;
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    page-break-after: always;
+  }
+  .slide::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, var(--grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+  }
+  .slide::after {
+    content: "";
+    position: absolute;
+    left: 84px;
+    right: 84px;
+    bottom: 32px;
+    height: 1px;
+    background: var(--navy);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+  .slide + .slide { border-top: 1px solid var(--rule); }
+  .slide > * { position: relative; z-index: 2; }
+
+  body.deck-nav-ready { overflow: hidden; }
+  body.deck-nav-ready .deck { height: 100vh; overflow: hidden; }
+  body.deck-nav-ready .slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 320ms var(--ease);
+  }
+  body.deck-nav-ready .slide.active { opacity: 1; pointer-events: auto; }
+  body.deck-nav-ready .slide + .slide { border-top: 0; }
+
+  .deck-progress {
+    position: fixed;
+    z-index: 50;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(23, 35, 78, 0.12);
+  }
+  .deck-progress span {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: var(--orange);
+    transition: width 220ms var(--ease);
+  }
+  #deck-nav {
+    position: fixed;
+    z-index: 50;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    padding: 7px 10px;
+    border: 1px solid rgba(23, 35, 78, 0.18);
+    border-radius: 999px;
+    background: rgba(246, 243, 234, 0.9);
+  }
+  #deck-nav .dot {
+    width: 7px;
+    height: 7px;
+    border: 0;
+    border-radius: 999px;
+    padding: 0;
+    background: rgba(23, 35, 78, 0.28);
+    cursor: pointer;
+  }
+  #deck-nav .dot.active { width: 22px; background: var(--orange); }
+
+  h1, h2, h3, p { margin: 0; }
+  .brand-mark { width: 150px; display: block; }
+  .dark .brand-mark, .consultation-cta .brand-mark { filter: brightness(0) invert(1); }
+  .dark {
+    color: var(--white);
+    background:
+      linear-gradient(145deg, rgba(10, 111, 147, 0.58), transparent 42%),
+      linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+  }
+  .dark::before {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,.055) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,.055) 1px, transparent 1px);
+  }
+  .dark::after { background: rgba(255,255,255,.46); }
+
+  .meta-row {
+    position: absolute;
+    top: 30px;
+    left: 84px;
+    right: 84px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .dark .meta-row { color: rgba(255,255,255,.7); }
+  .meta-left { display: inline-flex; gap: 10px; align-items: center; }
+  .tick { width: 34px; height: 3px; background: var(--orange); display: inline-block; }
+  .pagenum {
+    position: absolute;
+    right: 84px;
+    bottom: 48px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    letter-spacing: 0.06em;
+  }
+  .dark .pagenum { color: rgba(255,255,255,.78); }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+    font-family: var(--mono);
+    color: var(--orange);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .eyebrow::before { content: ""; width: 40px; height: 3px; background: currentColor; }
+
+  .cover-slide { justify-content: center; gap: 32px; }
+  .cover-top {
+    position: absolute;
+    top: 54px;
+    left: 84px;
+    right: 84px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .edition {
+    font-family: var(--mono);
+    color: rgba(255,255,255,.76);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+  h1.cover {
+    max-width: 13ch;
+    color: var(--white);
+    font-size: clamp(58px, 7.4vw, 108px);
+    line-height: .94;
+    font-weight: 900;
+    letter-spacing: 0;
+  }
+  .cover-kicker {
+    max-width: 720px;
+    color: rgba(255,255,255,.78);
+    font-size: 22px;
+    line-height: 1.45;
+  }
+  .display-figure {
+    position: absolute;
+    right: 78px;
+    bottom: 74px;
+    font-family: var(--display);
+    color: rgba(255,255,255,.14);
+    font-size: clamp(160px, 22vw, 340px);
+    font-style: italic;
+    line-height: .72;
+  }
+
+  .content { padding-top: 92px; }
+  h2.title {
+    max-width: 16ch;
+    color: var(--ink);
+    font-size: clamp(38px, 4.8vw, 66px);
+    line-height: .98;
+    font-weight: 900;
+    letter-spacing: 0;
+  }
+  h2.title.wide { max-width: 22ch; }
+  .lede {
+    max-width: 62ch;
+    color: var(--muted);
+    font-size: 19px;
+    line-height: 1.56;
+  }
+  .split {
+    display: grid;
+    grid-template-columns: .84fr 1.16fr;
+    gap: 58px;
+    align-items: start;
+    margin-top: 44px;
+  }
+  .rule-panel {
+    border: 1px solid var(--navy);
+    background: rgba(255,255,255,.58);
+    padding: 26px;
+  }
+  .rule-panel h3 { font-size: 21px; line-height: 1.18; font-weight: 900; margin-bottom: 10px; }
+  .rule-panel p { color: var(--muted); font-size: 15px; line-height: 1.52; }
+
+  .ledger {
+    margin-top: 42px;
+    border-top: 1.5px solid var(--navy);
+  }
+  .ledger-row {
+    display: grid;
+    grid-template-columns: 74px 1fr 132px;
+    gap: 28px;
+    align-items: baseline;
+    min-height: 104px;
+    padding: 22px 0;
+    border-bottom: 1px solid rgba(23,35,78,.42);
+  }
+  .row-index {
+    font-family: var(--display);
+    font-size: 54px;
+    line-height: .9;
+    font-style: italic;
+    color: var(--navy);
+  }
+  .row-copy h3 {
+    color: var(--ink);
+    font-size: 27px;
+    line-height: 1.1;
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+  .row-copy p {
+    max-width: 70ch;
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.45;
+  }
+  .row-state {
+    justify-self: end;
+    min-width: 106px;
+    padding: 8px 10px;
+    border: 1px solid currentColor;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .row-state.ok { color: var(--ok); }
+  .row-state.warn { color: var(--warn); }
+  .row-state.danger { color: var(--danger); }
+
+  .proof-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1px;
+    margin-top: 42px;
+    border: 1px solid var(--navy);
+    background: var(--navy);
+  }
+  .proof-cell {
+    min-height: 138px;
+    background: rgba(255,255,255,.72);
+    padding: 20px;
+  }
+  .proof-cell strong {
+    display: block;
+    font-family: var(--display);
+    color: var(--navy);
+    font-size: 46px;
+    line-height: .92;
+    font-style: italic;
+    font-weight: 600;
+  }
+  .proof-cell span {
+    display: block;
+    margin-top: 16px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .span-2 { grid-column: span 2; }
+  .span-3 { grid-column: span 3; }
+
+  .process {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    margin-top: 70px;
+  }
+  .process::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 20px;
+    height: 3px;
+    background: var(--orange);
+  }
+  .step { position: relative; padding-top: 60px; }
+  .step::before {
+    content: attr(data-step);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--orange);
+    color: white;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .step h3 { margin-bottom: 8px; font-size: 22px; }
+  .step p { color: var(--muted); font-size: 15px; line-height: 1.48; }
+
+  .section-slide { justify-content: center; }
+  .section-number {
+    position: absolute;
+    right: 78px;
+    bottom: 70px;
+    font-family: var(--display);
+    color: rgba(255,255,255,.16);
+    font-size: clamp(170px, 24vw, 360px);
+    font-style: italic;
+    line-height: .7;
+  }
+  .section-slide h2 {
+    max-width: 12ch;
+    color: var(--white);
+    font-size: clamp(48px, 6.4vw, 92px);
+    line-height: .94;
+    font-weight: 900;
+  }
+
+  .consultation-cta {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 96px 84px 72px;
+    color: var(--white);
+    background:
+      radial-gradient(circle at 50% 44%, rgba(255,255,255,.06), transparent 30%),
+      linear-gradient(180deg, #182B63 0%, #152B5B 48%, #16A6C8 100%);
+  }
+  .consultation-cta::before {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
+  }
+  .consultation-cta::after { display: none; }
+  .cta-title {
+    max-width: 1120px;
+    color: var(--white);
+    font-size: clamp(30px, 3.25vw, 48px);
+    line-height: 1.14;
+    font-weight: 900;
+  }
+  .cta-title span {
+    display: block;
+    color: rgba(255,255,255,.78);
+    font-size: .76em;
+    font-weight: 700;
+  }
+  .cta-subtitle {
+    margin-top: 88px;
+    color: rgba(255,255,255,.94);
+    font-size: clamp(26px, 2.8vw, 42px);
+    line-height: 1.2;
+  }
+  .qr-card {
+    width: 142px;
+    height: 142px;
+    margin-top: 76px;
+    border-radius: 12px;
+    background: var(--white);
+    padding: 8px;
+    box-shadow: 0 12px 28px rgba(11,21,51,.18);
+  }
+  .qr-card img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .footer-contact {
+    position: absolute;
+    left: 50%;
+    bottom: 54px;
+    width: min(1180px, calc(100vw - 160px));
+    transform: translateX(-50%);
+  }
+  .footer-contact img { display: block; width: 100%; height: auto; }
+
+  @media (max-width: 900px) {
+    .slide { padding: 56px 32px; min-height: 680px; }
+    .slide::after, .meta-row, .cover-top { left: 32px; right: 32px; }
+    .pagenum { right: 32px; }
+    .split, .process { grid-template-columns: 1fr; }
+    .proof-grid { grid-template-columns: 1fr 1fr; }
+    .span-2, .span-3 { grid-column: span 1; }
+    .ledger-row { grid-template-columns: 52px 1fr; }
+    .row-state { justify-self: start; grid-column: 2; }
+    .footer-contact { width: calc(100vw - 64px); bottom: 36px; }
+  }
+
+  @media print {
+    body.deck-nav-ready { overflow: visible; }
+    body.deck-nav-ready .deck { height: auto; overflow: visible; }
+    body.deck-nav-ready .slide { position: relative; opacity: 1; pointer-events: auto; }
+    .deck-progress, #deck-nav { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="deck-progress" aria-hidden="true"><span></span></div>
+<main class="deck" id="deck">
+  <section class="slide dark cover-slide active">
+    <div class="cover-top">
+      <img class="brand-mark" src="logo-aptaworks.svg" alt="Aptaworks">
+      <span class="edition">Editorial Grid / 2026</span>
+    </div>
+    <span class="eyebrow">Aptaworks design system</span>
+    <h1 class="cover">Practical decks with editorial precision.</h1>
+    <p class="cover-kicker">Apta identity stays corporate and credible; the composition becomes sharper, gridded, and less generic.</p>
+    <div class="display-figure">A</div>
+    <div class="pagenum">01 / 07</div>
+  </section>
+
+  <section class="slide content">
+    <div class="meta-row"><span class="meta-left"><span class="tick"></span>Component Rewrite</span><span>Apta Editorial Grid</span></div>
+    <span class="eyebrow">Option sets</span>
+    <h2 class="title wide">Use ledger rows instead of stacked AI-looking cards.</h2>
+    <div class="ledger">
+      <div class="ledger-row">
+        <div class="row-index">01</div>
+        <div class="row-copy"><h3>Hijau</h3><p>Sering pakai AI hampir setiap hari. Anda bisa jadi buddy saat praktik.</p></div>
+        <div class="row-state ok">sering</div>
+      </div>
+      <div class="ledger-row">
+        <div class="row-index">02</div>
+        <div class="row-copy"><h3>Kuning</h3><p>Pernah coba 1-2 kali. Hari ini kita perkuat cara pakainya.</p></div>
+        <div class="row-state warn">pernah coba</div>
+      </div>
+      <div class="ledger-row">
+        <div class="row-index">03</div>
+        <div class="row-copy"><h3>Merah</h3><p>Belum pernah atau baru tahu hari ini. Kita mulai dari nol bersama.</p></div>
+        <div class="row-state danger">mulai nol</div>
+      </div>
+    </div>
+    <div class="pagenum">02 / 07</div>
+  </section>
+
+  <section class="slide content">
+    <div class="meta-row"><span class="meta-left"><span class="tick"></span>Proof Module</span><span>Grid Cells</span></div>
+    <span class="eyebrow">Structured evidence</span>
+    <h2 class="title">Dense proof feels more credible when it follows a visible grid.</h2>
+    <div class="proof-grid">
+      <div class="proof-cell span-2"><strong>60+</strong><span>credential slides distilled into deck components</span></div>
+      <div class="proof-cell"><strong>Lato</strong><span>Apta brand sans</span></div>
+      <div class="proof-cell"><strong>DM</strong><span>metadata rhythm</span></div>
+      <div class="proof-cell span-2"><strong>#EF7636</strong><span>orange for action, signal, and movement</span></div>
+      <div class="proof-cell span-3"><strong>Ledger</strong><span>preferred component for agenda, options, levels, and comparisons</span></div>
+      <div class="proof-cell span-3"><strong>Grid</strong><span>paper substrate creates editorial calm without losing business clarity</span></div>
+    </div>
+    <div class="pagenum">03 / 07</div>
+  </section>
+
+  <section class="slide dark section-slide">
+    <span class="eyebrow">Section divider</span>
+    <h2>From corporate to considered.</h2>
+    <p class="lede" style="margin-top:24px;color:rgba(255,255,255,.78);">Dark slides remain Apta navy, but the layout borrows editorial tension from cobalt-grid.</p>
+    <div class="section-number">02</div>
+    <div class="pagenum">04 / 07</div>
+  </section>
+
+  <section class="slide content">
+    <div class="meta-row"><span class="meta-left"><span class="tick"></span>Process</span><span>Delivery Logic</span></div>
+    <span class="eyebrow">Connector grammar</span>
+    <h2 class="title wide">Process slides should read like a clean map, not a feature-card row.</h2>
+    <div class="process">
+      <div class="step" data-step="1"><h3>Diagnose</h3><p>Map context, users, constraints, and what success looks like.</p></div>
+      <div class="step" data-step="2"><h3>Design</h3><p>Turn goals into modules, exercises, prompts, and output formats.</p></div>
+      <div class="step" data-step="3"><h3>Deliver</h3><p>Run guided practice with tight facilitator notes and visible examples.</p></div>
+      <div class="step" data-step="4"><h3>Adopt</h3><p>Close with routines, action plans, and follow-up prompts.</p></div>
+    </div>
+    <div class="pagenum">05 / 07</div>
+  </section>
+
+  <section class="slide content">
+    <div class="meta-row"><span class="meta-left"><span class="tick"></span>Usage Rule</span><span>Composition</span></div>
+    <span class="eyebrow">When to use what</span>
+    <h2 class="title wide">Choose the component by information shape.</h2>
+    <div class="split">
+      <div class="rule-panel"><h3>Use ledger rows</h3><p>For levels, options, agenda items, exercise groups, and comparison lists. This avoids the generic stacked-card look.</p></div>
+      <div class="rule-panel"><h3>Use proof grids</h3><p>For metrics, clients, capability summaries, handout mappings, and any content that benefits from dense scanning.</p></div>
+    </div>
+    <div class="pagenum">06 / 07</div>
+  </section>
+
+  <section class="slide consultation-cta">
+    <h2 class="cta-title">Maximize your operational efficiency and business growth
+      <span>with Aptaworks' cutting-edge data solutions.</span>
+    </h2>
+    <p class="cta-subtitle">Get a consultation with our experts at</p>
+    <div class="qr-card"><img src="qr-apta.png" alt="Aptaworks consultation QR code"></div>
+    <div class="footer-contact"><img src="Footer.png" alt="(+62) 811 862 2782, aptaworks, aptaworks, www.apta.id, info@apta.id"></div>
+    <div class="pagenum">07 / 07</div>
+  </section>
+</main>
+<nav id="deck-nav" aria-label="Slide navigation"></nav>
+<script>
+(() => {
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const nav = document.getElementById('deck-nav');
+  const progress = document.querySelector('.deck-progress span');
+  let index = Math.max(0, slides.findIndex(slide => slide.classList.contains('active')));
+  let wheelLock = false;
+
+  document.body.classList.add('deck-nav-ready');
+
+  slides.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'dot';
+    dot.type = 'button';
+    dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+    dot.addEventListener('click', () => go(i));
+    nav.appendChild(dot);
+  });
+
+  slides.forEach((slide, i) => {
+    const page = slide.querySelector('.pagenum');
+    if (page) page.textContent = `${String(i + 1).padStart(2, '0')} / ${slides.length}`;
+  });
+
+  function go(next) {
+    index = Math.max(0, Math.min(slides.length - 1, next));
+    slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+    Array.from(nav.children).forEach((dot, i) => dot.classList.toggle('active', i === index));
+    progress.style.width = `${((index + 1) / slides.length) * 100}%`;
+  }
+
+  window.addEventListener('keydown', event => {
+    if (['ArrowRight', 'PageDown', ' '].includes(event.key)) { event.preventDefault(); go(index + 1); }
+    if (['ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); go(index - 1); }
+    if (event.key === 'Home') { event.preventDefault(); go(0); }
+    if (event.key === 'End') { event.preventDefault(); go(slides.length - 1); }
+  });
+
+  window.addEventListener('wheel', event => {
+    if (wheelLock || Math.abs(event.deltaY) < 18) return;
+    wheelLock = true;
+    go(index + (event.deltaY > 0 ? 1 : -1));
+    setTimeout(() => { wheelLock = false; }, 420);
+  }, { passive: true });
+
+  let touchStartX = 0;
+  window.addEventListener('touchstart', event => { touchStartX = event.changedTouches[0].clientX; }, { passive: true });
+  window.addEventListener('touchend', event => {
+    const delta = event.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(delta) > 48) go(index + (delta < 0 ? 1 : -1));
+  }, { passive: true });
+
+  go(index);
+})();
+</script>
+<noscript>
+  <style>
+    .deck-progress, #deck-nav { display: none; }
+    .slide { position: relative; opacity: 1; }
+  </style>
+</noscript>
+</body>
+</html>

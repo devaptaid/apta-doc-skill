@@ -1,0 +1,4 @@
+interface:
+  display_name: "Aptaworks Document Proposal"
+  short_description: "Build Aptaworks Markdown, PDF, and Word documents"
+  default_prompt: "Use $apta-doc-proposal to build an Aptaworks document, offering direct Word/PDF output or Markdown and HTML review first."
